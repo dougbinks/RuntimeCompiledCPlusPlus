@@ -1,11 +1,10 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.5)
 
 project( RuntimeCompiledCPlusPlus )
 #
 # Options
 #
 option(BUILD_EXAMPLES "Build example applications" ON)
-option(GLFW_SYSTEM    "Use the operating system glfw library" OFF)
 option(RCCPP_ALLOCATOR_INTERFACE "Builds RCCPP with object allocation done using an allocator interface." OFF)
 
 #
@@ -62,16 +61,20 @@ install(TARGETS RuntimeObjectSystem RuntimeCompiler
 	DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/)
 
 if(BUILD_EXAMPLES)
+	option(BUILD_EXAMPLE_CONSOLE "Build ConsoleExample" ON)
+	option(BUILD_EXAMPLE_SIMPLETEST "Build SimpleTest" ON)
 
-
+	if(BUILD_EXAMPLE_CONSOLE)
 	#
 	# ConsoleExample
 	#
 
 	add_executable(ConsoleExample ${ConsoleExample_SRCS})
 	target_link_libraries(ConsoleExample RuntimeCompiler RuntimeObjectSystem)
+	endif() # if(BUILD_EXAMPLE_CONSOLE)
 
-	
+	if(BUILD_EXAMPLE_SIMPLETEST)
+
 	find_package(OpenGL)
 	if(OpenGL_FOUND)
 		#
@@ -110,28 +113,11 @@ if(BUILD_EXAMPLES)
 		#
 		# glfw
 		#
-		if(GLFW_SYSTEM)
-			set(GLFW_LIBRARIES glfw)
-		else()
-			include_directories(External/glfw/include)
-			if(WIN32)
-					set(GLFW_LIBRARIES glfw winmm)
-					add_subdirectory( ${CMAKE_SOURCE_DIR}/External/glfw/projects )
-			else()
-				add_library( glfw STATIC IMPORTED )
-				if(APPLE)
-					FIND_LIBRARY(COCOA_LIBRARY Cocoa)
-					FIND_LIBRARY(IOKIT_LIBRARY IOKit)
-					MARK_AS_ADVANCED(COCOA_LIBRARY IOKIT_LIBRARY)
-					set_target_properties( glfw PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/External/glfw/libOSX/libglfw.a )
-					set(GLFW_LIBRARIES glfw ${COCOA_LIBRARY} ${IOKIT_LIBRARY})
-				else()
-					set_target_properties( glfw PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/External/glfw/libX11/libglfw.a )
-					set(GLFW_LIBRARIES glfw X11 pthread)
-				endif()
-			endif()
-		endif()
-	
+		
+		set( GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only" )
+		set( GLFW_INSTALL OFF CACHE BOOL  "GLFW lib only" )
+		add_subdirectory( External/glfw )
+		include_directories("${GLFW_SOURCE_DIR}/include")
 		#
 		# assimp
 		#
@@ -179,7 +165,7 @@ if(BUILD_EXAMPLES)
 				RocketControls 
 				RocketDebugger
 				${OPENGL_LIBRARIES} 
-				${GLFW_LIBRARIES}
+				glfw
 				${ASSIMP_LIBRARIES}
 			)
 		if(MSVC)
@@ -190,4 +176,5 @@ if(BUILD_EXAMPLES)
 	else()  # OpenGL_FOUND
 		message(WARNING "OpenGL not found, not creating graphical example")
 	endif() # OpenGL_FOUND
-endif()
+	endif() # BUILD_EXAMPLE_SIMPLETEST
+endif() # BUILD_EXAMPLES
